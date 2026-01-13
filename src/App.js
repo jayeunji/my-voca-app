@@ -49,7 +49,7 @@ function App() {
   }, [chapters]);
 
 
-  // --- [핵심] 단어 상태 업데이트 로직 ---
+  // --- 단어 상태 업데이트 로직 ---
   const updateWordStats = (wordId, isCorrect) => {
     setChapters(prevChapters => {
       const newChapters = { ...prevChapters };
@@ -64,7 +64,7 @@ function App() {
           const currentLevel = word.level || 0;
           const lastReviewed = word.lastReviewed || 0;
 
-          // 오늘 이미 학습한 단어 처리 (중복 레벨업 방지)
+          // 오늘 이미 학습한 단어 처리
           if (lastReviewed === today) {
             if (isCorrect) break;
           }
@@ -95,7 +95,7 @@ function App() {
     });
   };
 
-  // --- 기능: 오늘의 복습 단어 모으기 ---
+  // --- 오늘의 복습 단어 모으기 ---
   const getTodayReviewWords = () => {
     const today = getToday();
     let allReviewWords = [];
@@ -132,13 +132,10 @@ function App() {
     setView('study');
   };
 
-  // ★ 수정된 부분: (재도전) 텍스트 중복 방지
   const retryWrongWords = () => {
-    // 이미 '(재도전)' 글자가 있으면 추가하지 않음
     if (!currentChapterName.includes('(재도전)')) {
       setCurrentChapterName(`${currentChapterName} (재도전)`);
     }
-    
     setStudyList(shuffleArray(sessionWrongWords));
     setCurrentIndex(0);
     setSessionWrongWords([]); 
@@ -146,7 +143,7 @@ function App() {
     setIsFinished(false);
   };
 
-  // --- 기능: 파일 업로드 ---
+  // --- 기능: 파일 업로드 (수정됨: 숫자만 입력받음) ---
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -166,8 +163,12 @@ function App() {
         });
       });
       if (newWords.length > 0) {
-        const name = prompt("챕터 이름:", `Chapter ${Object.keys(chapters).length + 1}`);
-        if (name) {
+        // ★ 수정 1: 숫자만 입력받기
+        const numInput = prompt("챕터 번호를 입력하세요 (예: 1):", Object.keys(chapters).length + 1);
+        
+        if (numInput && numInput.trim()) {
+          // 입력받은 숫자에 'Chapter '를 붙여서 저장
+          const name = `Chapter ${numInput.trim()}`;
           setChapters(prev => ({ ...prev, [name]: newWords }));
         }
       }
@@ -187,13 +188,10 @@ function App() {
     }
   };
 
-  // --- 학습 로직 ---
   const handleCardClick = () => setIsFlipped(!isFlipped);
 
   const handleAnswer = (isKnown) => {
     const currentWord = studyList[currentIndex];
-
-    // 오답 리스트 처리 (중복 방지)
     if (!isKnown) {
       setSessionWrongWords(prev => {
         if (prev.find(w => w.id === currentWord.id)) {
@@ -202,8 +200,6 @@ function App() {
         return [...prev, currentWord];
       });
     }
-
-    // DB 업데이트
     updateWordStats(currentWord.id, isKnown);
 
     if (currentIndex + 1 < studyList.length) {
@@ -217,6 +213,15 @@ function App() {
   // --- 렌더링 ---
   if (view === 'home') {
     const todayCount = getTodayReviewWords().length;
+
+    // ★ 수정 2: 챕터 목록 정렬하기 (숫자 기준 오름차순)
+    // 1. 키들을 배열로 가져옴
+    // 2. 숫자만 추출해서 비교 (Chapter 1, Chapter 2, Chapter 10 순서)
+    const sortedChapterNames = Object.keys(chapters).sort((a, b) => {
+      const numA = parseInt(a.replace(/[^0-9]/g, ''), 10) || 0; // 숫자 아닌 문자 제거 후 정수 변환
+      const numB = parseInt(b.replace(/[^0-9]/g, ''), 10) || 0;
+      return numA - numB; // 오름차순 정렬
+    });
 
     return (
       <div className="container">
@@ -253,10 +258,11 @@ function App() {
         </div>
 
         <div className="chapter-list">
-          {Object.keys(chapters).length === 0 ? (
+          {sortedChapterNames.length === 0 ? (
             <p style={{color: '#999', textAlign:'center'}}>저장된 챕터가 없습니다.<br/>위 버튼을 눌러 파일을 추가해주세요.</p>
           ) : (
-            Object.keys(chapters).map(name => (
+            // 정렬된 이름 목록으로 렌더링
+            sortedChapterNames.map(name => (
               <div key={name} className="chapter-item" onClick={() => startChapterStudy(name)}>
                 <span className="chapter-name">{name}</span>
                 <span className="chapter-count">({chapters[name].length})</span>
@@ -316,7 +322,6 @@ function App() {
         <div className={`card ${isFlipped ? 'flipped' : ''}`}>
           <div className="card-front">
             {currentWord.en}
-            {/* 디버깅용: 현재 레벨 표시 */}
             <div style={{position:'absolute', bottom:'10px', fontSize:'0.8rem', color:'#ccc'}}>
               Lv.{currentWord.level || 0}
             </div>
