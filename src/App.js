@@ -40,7 +40,7 @@ function App() {
   const [isFlipped, setIsFlipped] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
   
-  // ★ 틀린 단어 관리 (중복 방지 및 재학습용)
+  // 틀린 단어 관리
   const [sessionWrongWords, setSessionWrongWords] = useState([]);
 
   // --- 저장 (Effect) ---
@@ -49,7 +49,7 @@ function App() {
   }, [chapters]);
 
 
-  // --- [핵심] 단어 상태 업데이트 로직 (중복 학습 방지 적용) ---
+  // --- [핵심] 단어 상태 업데이트 로직 ---
   const updateWordStats = (wordId, isCorrect) => {
     setChapters(prevChapters => {
       const newChapters = { ...prevChapters };
@@ -64,24 +64,20 @@ function App() {
           const currentLevel = word.level || 0;
           const lastReviewed = word.lastReviewed || 0;
 
-          // 1. 이미 오늘 학습한 단어 처리
+          // 오늘 이미 학습한 단어 처리 (중복 레벨업 방지)
           if (lastReviewed === today) {
-            // 맞췄는데(O), 오늘 이미 한 번 건드린 단어라면? -> 상태 업데이트 건너뜀 (레벨업 방지)
             if (isCorrect) break;
-            // 틀렸으면(X)? -> 아까 맞췄든 틀렸든 상관없이 가차없이 레벨 0으로 초기화해야 함
           }
 
           let nextLevel = 0;
           let nextDate = 0;
 
           if (isCorrect) {
-            // 정답 & 오늘 첫 시도: 레벨 업
             nextLevel = currentLevel + 1;
             const intervals = [1, 3, 7, 14, 30, 60];
             const daysToAdd = intervals[currentLevel] || 60; 
             nextDate = getNextDate(daysToAdd);
           } else {
-            // 오답: 레벨 초기화 & 내일 다시
             nextLevel = 0;
             nextDate = getNextDate(1);
           }
@@ -126,23 +122,26 @@ function App() {
     startSession(name, chapters[name]);
   };
 
-  // 학습 시작 공통 함수
   const startSession = (title, list) => {
     setCurrentChapterName(title);
     setStudyList(shuffleArray(list));
     setCurrentIndex(0);
-    setSessionWrongWords([]); // 세션 시작 시 오답 초기화
+    setSessionWrongWords([]);
     setIsFlipped(false);
     setIsFinished(false);
     setView('study');
   };
 
-  // ★ 기능 복구: 틀린 단어만 재학습 (Drill Mode)
+  // ★ 수정된 부분: (재도전) 텍스트 중복 방지
   const retryWrongWords = () => {
-    setCurrentChapterName(`${currentChapterName} (재도전)`);
-    setStudyList(shuffleArray(sessionWrongWords)); // 틀린 것만 가지고 리스트 교체
+    // 이미 '(재도전)' 글자가 있으면 추가하지 않음
+    if (!currentChapterName.includes('(재도전)')) {
+      setCurrentChapterName(`${currentChapterName} (재도전)`);
+    }
+    
+    setStudyList(shuffleArray(sessionWrongWords));
     setCurrentIndex(0);
-    setSessionWrongWords([]); // ★ 중요: 재도전 리스트를 비워야 이번에 또 틀린 것만 담을 수 있음
+    setSessionWrongWords([]); 
     setIsFlipped(false);
     setIsFinished(false);
   };
@@ -194,10 +193,9 @@ function App() {
   const handleAnswer = (isKnown) => {
     const currentWord = studyList[currentIndex];
 
-    // 1. 화면 표시용 오답 리스트 처리 (★ 개수 오류 수정)
+    // 오답 리스트 처리 (중복 방지)
     if (!isKnown) {
       setSessionWrongWords(prev => {
-        // 이미 오답 노트에 있는 단어면 추가하지 않음 (중복 방지)
         if (prev.find(w => w.id === currentWord.id)) {
           return prev;
         }
@@ -205,10 +203,9 @@ function App() {
       });
     }
 
-    // 2. DB 업데이트 (망각 곡선 + 중복 방지)
+    // DB 업데이트
     updateWordStats(currentWord.id, isKnown);
 
-    // 3. 다음 카드로 이동
     if (currentIndex + 1 < studyList.length) {
       setIsFlipped(false);
       setTimeout(() => setCurrentIndex(currentIndex + 1), 150);
@@ -283,7 +280,6 @@ function App() {
               <p style={{fontSize: '1.1rem', margin: '20px 0'}}>
                 앗, <span style={{color:'red', fontWeight:'bold'}}>{sessionWrongWords.length}개</span>를 틀렸네요.
               </p>
-              {/* ★ 기능 복구: 틀린 것만 다시 하기 버튼 */}
               <button className="action-btn" style={{backgroundColor: '#ff6b6b'}} onClick={retryWrongWords}>
                 💪 틀린 단어 다시 학습하기
               </button>
