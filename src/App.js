@@ -40,7 +40,7 @@ function App() {
   const [isFlipped, setIsFlipped] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
   
-  // 틀린 단어 관리
+  // 틀린 단어 관리 (재도전용)
   const [sessionWrongWords, setSessionWrongWords] = useState([]);
 
   // --- 저장 (Effect) ---
@@ -49,7 +49,7 @@ function App() {
   }, [chapters]);
 
 
-  // --- 단어 상태 업데이트 로직 ---
+  // --- [핵심] 단어 상태 업데이트 로직 ---
   const updateWordStats = (wordId, isCorrect) => {
     setChapters(prevChapters => {
       const newChapters = { ...prevChapters };
@@ -64,20 +64,24 @@ function App() {
           const currentLevel = word.level || 0;
           const lastReviewed = word.lastReviewed || 0;
 
-          // 오늘 이미 학습한 단어 처리
+          // 오늘 이미 학습한 단어 처리 (중복 레벨업 방지)
           if (lastReviewed === today) {
+            // 맞췄는데(O), 오늘 이미 한 번 건드린 단어라면? -> 상태 업데이트 건너뜀
             if (isCorrect) break;
+            // 틀렸으면(X)? -> 아까 맞췄든 말든 가차 없이 레벨 0으로 초기화
           }
 
           let nextLevel = 0;
           let nextDate = 0;
 
           if (isCorrect) {
+            // 정답 & 오늘 첫 시도: 레벨 업
             nextLevel = currentLevel + 1;
             const intervals = [1, 3, 7, 14, 30, 60];
             const daysToAdd = intervals[currentLevel] || 60; 
             nextDate = getNextDate(daysToAdd);
           } else {
+            // 오답: 레벨 초기화 & 내일 다시
             nextLevel = 0;
             nextDate = getNextDate(1);
           }
@@ -95,7 +99,7 @@ function App() {
     });
   };
 
-  // --- ★ 기능 추가: 단어 상태 원상 복구 (Undo용) ---
+  // --- 기능: 상태 원상 복구 (Undo용) ---
   const restoreWord = (originalWord) => {
     setChapters(prev => {
       const newChapters = { ...prev };
@@ -111,13 +115,13 @@ function App() {
     });
   };
 
-  // --- ★ 기능 추가: 되돌리기 (Undo) 핸들러 ---
+  // --- 기능: 뒤로가기 (Undo) 핸들러 ---
   const handleUndo = (e) => {
-    e.stopPropagation(); // 카드 클릭 방지
-    if (currentIndex === 0) return; // 첫 번째 카드면 동작 안 함
+    e.stopPropagation(); 
+    if (currentIndex === 0) return; 
 
     const prevIndex = currentIndex - 1;
-    const prevWord = studyList[prevIndex]; // 방금 지나간 단어 (학습 전 상태가 들어있음)
+    const prevWord = studyList[prevIndex]; // 학습 전 상태가 담긴 스냅샷
 
     // 1. DB 상태 복구 (레벨, 날짜 등)
     restoreWord(prevWord);
@@ -128,7 +132,7 @@ function App() {
     // 3. 인덱스 되돌리기 & 카드 앞면으로
     setCurrentIndex(prevIndex);
     setIsFlipped(false);
-    setIsFinished(false); // 혹시 완료 화면에서 눌렀을 경우 대비
+    setIsFinished(false); 
   };
 
   // --- 오늘의 복습 단어 모으기 ---
@@ -158,20 +162,23 @@ function App() {
     startSession(name, chapters[name]);
   };
 
+  // 학습 세션 시작 공통 함수
   const startSession = (title, list) => {
     setCurrentChapterName(title);
     setStudyList(shuffleArray(list));
     setCurrentIndex(0);
-    setSessionWrongWords([]);
+    setSessionWrongWords([]); // 새 세션 시작 시 오답 초기화
     setIsFlipped(false);
     setIsFinished(false);
     setView('study');
   };
 
+  // 틀린 단어 재학습
   const retryWrongWords = () => {
     if (!currentChapterName.includes('(재도전)')) {
       setCurrentChapterName(`${currentChapterName} (재도전)`);
     }
+    
     setStudyList(shuffleArray(sessionWrongWords));
     setCurrentIndex(0);
     setSessionWrongWords([]); 
@@ -179,7 +186,7 @@ function App() {
     setIsFinished(false);
   };
 
-  // --- 기능: 파일 업로드 ---
+  // --- 기능: 파일 업로드 (숫자만 입력) ---
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -199,7 +206,9 @@ function App() {
         });
       });
       if (newWords.length > 0) {
+        // 숫자만 입력받기
         const numInput = prompt("챕터 번호를 입력하세요 (예: 1):", Object.keys(chapters).length + 1);
+        
         if (numInput && numInput.trim()) {
           const name = `Chapter ${numInput.trim()}`;
           setChapters(prev => ({ ...prev, [name]: newWords }));
@@ -225,6 +234,7 @@ function App() {
 
   const handleAnswer = (isKnown) => {
     const currentWord = studyList[currentIndex];
+    // 오답 노트 추가 (중복 방지)
     if (!isKnown) {
       setSessionWrongWords(prev => {
         if (prev.find(w => w.id === currentWord.id)) {
@@ -233,6 +243,7 @@ function App() {
         return [...prev, currentWord];
       });
     }
+    // DB 업데이트
     updateWordStats(currentWord.id, isKnown);
 
     if (currentIndex + 1 < studyList.length) {
@@ -247,6 +258,7 @@ function App() {
   if (view === 'home') {
     const todayCount = getTodayReviewWords().length;
 
+    // 챕터 목록 정렬 (숫자 기준 오름차순)
     const sortedChapterNames = Object.keys(chapters).sort((a, b) => {
       const numA = parseInt(a.replace(/[^0-9]/g, ''), 10) || 0;
       const numB = parseInt(b.replace(/[^0-9]/g, ''), 10) || 0;
@@ -333,7 +345,23 @@ function App() {
     );
   }
 
-  const currentWord = studyList[currentIndex];
+  // --- 학습 화면 렌더링 (실시간 데이터 조회) ---
+  const currentStudyItem = studyList[currentIndex];
+  
+  // ★ 스냅샷 대신 DB의 최신 정보를 조회해서 보여줌 (Level 0 즉시 반영용)
+  let currentWord = currentStudyItem;
+  if (currentStudyItem) {
+    for (const name in chapters) {
+      const found = chapters[name].find(w => w.id === currentStudyItem.id);
+      if (found) {
+        currentWord = found; 
+        break;
+      }
+    }
+  }
+
+  if (!currentWord) return <div className="container">Loading...</div>;
+
   return (
     <div className="container">
       <div className="study-header">
@@ -351,6 +379,7 @@ function App() {
         <div className={`card ${isFlipped ? 'flipped' : ''}`}>
           <div className="card-front">
             {currentWord.en}
+            {/* 현재 레벨 표시 */}
             <div style={{position:'absolute', bottom:'10px', fontSize:'0.8rem', color:'#ccc'}}>
               Lv.{currentWord.level || 0}
             </div>
@@ -359,14 +388,14 @@ function App() {
         </div>
       </div>
       
-      {/* ★ 기능 추가: 되돌리기 버튼 UI */}
+      {/* 뒤로가기 버튼 */}
       <div style={{width: '100%', display: 'flex', justifyContent: 'center', marginBottom: '10px'}}>
         <button 
           onClick={handleUndo} 
           style={{
             background: 'none', 
             border: 'none', 
-            color: currentIndex > 0 ? '#666' : '#ccc', // 첫 카드일 땐 흐리게
+            color: currentIndex > 0 ? '#666' : '#ccc', 
             cursor: currentIndex > 0 ? 'pointer' : 'default',
             fontSize: '0.9rem',
             display: 'flex',
