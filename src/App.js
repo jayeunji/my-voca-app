@@ -95,6 +95,42 @@ function App() {
     });
   };
 
+  // --- ★ 기능 추가: 단어 상태 원상 복구 (Undo용) ---
+  const restoreWord = (originalWord) => {
+    setChapters(prev => {
+      const newChapters = { ...prev };
+      for (const name in newChapters) {
+        const idx = newChapters[name].findIndex(w => w.id === originalWord.id);
+        if (idx !== -1) {
+          // 학습 전 상태(originalWord)로 데이터를 덮어씌움
+          newChapters[name][idx] = { ...originalWord };
+          break;
+        }
+      }
+      return newChapters;
+    });
+  };
+
+  // --- ★ 기능 추가: 되돌리기 (Undo) 핸들러 ---
+  const handleUndo = (e) => {
+    e.stopPropagation(); // 카드 클릭 방지
+    if (currentIndex === 0) return; // 첫 번째 카드면 동작 안 함
+
+    const prevIndex = currentIndex - 1;
+    const prevWord = studyList[prevIndex]; // 방금 지나간 단어 (학습 전 상태가 들어있음)
+
+    // 1. DB 상태 복구 (레벨, 날짜 등)
+    restoreWord(prevWord);
+
+    // 2. 이번 세션 오답 노트에서 제거 (만약 아까 틀렸다고 했었다면)
+    setSessionWrongWords(prev => prev.filter(w => w.id !== prevWord.id));
+
+    // 3. 인덱스 되돌리기 & 카드 앞면으로
+    setCurrentIndex(prevIndex);
+    setIsFlipped(false);
+    setIsFinished(false); // 혹시 완료 화면에서 눌렀을 경우 대비
+  };
+
   // --- 오늘의 복습 단어 모으기 ---
   const getTodayReviewWords = () => {
     const today = getToday();
@@ -143,7 +179,7 @@ function App() {
     setIsFinished(false);
   };
 
-  // --- 기능: 파일 업로드 (수정됨: 숫자만 입력받음) ---
+  // --- 기능: 파일 업로드 ---
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -163,11 +199,8 @@ function App() {
         });
       });
       if (newWords.length > 0) {
-        // ★ 수정 1: 숫자만 입력받기
         const numInput = prompt("챕터 번호를 입력하세요 (예: 1):", Object.keys(chapters).length + 1);
-        
         if (numInput && numInput.trim()) {
-          // 입력받은 숫자에 'Chapter '를 붙여서 저장
           const name = `Chapter ${numInput.trim()}`;
           setChapters(prev => ({ ...prev, [name]: newWords }));
         }
@@ -214,13 +247,10 @@ function App() {
   if (view === 'home') {
     const todayCount = getTodayReviewWords().length;
 
-    // ★ 수정 2: 챕터 목록 정렬하기 (숫자 기준 오름차순)
-    // 1. 키들을 배열로 가져옴
-    // 2. 숫자만 추출해서 비교 (Chapter 1, Chapter 2, Chapter 10 순서)
     const sortedChapterNames = Object.keys(chapters).sort((a, b) => {
-      const numA = parseInt(a.replace(/[^0-9]/g, ''), 10) || 0; // 숫자 아닌 문자 제거 후 정수 변환
+      const numA = parseInt(a.replace(/[^0-9]/g, ''), 10) || 0;
       const numB = parseInt(b.replace(/[^0-9]/g, ''), 10) || 0;
-      return numA - numB; // 오름차순 정렬
+      return numA - numB;
     });
 
     return (
@@ -261,7 +291,6 @@ function App() {
           {sortedChapterNames.length === 0 ? (
             <p style={{color: '#999', textAlign:'center'}}>저장된 챕터가 없습니다.<br/>위 버튼을 눌러 파일을 추가해주세요.</p>
           ) : (
-            // 정렬된 이름 목록으로 렌더링
             sortedChapterNames.map(name => (
               <div key={name} className="chapter-item" onClick={() => startChapterStudy(name)}>
                 <span className="chapter-name">{name}</span>
@@ -330,7 +359,25 @@ function App() {
         </div>
       </div>
       
-      <p style={{ color: '#888', marginBottom: '30px', fontSize: '0.9rem' }}>터치하여 뒤집기</p>
+      {/* ★ 기능 추가: 되돌리기 버튼 UI */}
+      <div style={{width: '100%', display: 'flex', justifyContent: 'center', marginBottom: '10px'}}>
+        <button 
+          onClick={handleUndo} 
+          style={{
+            background: 'none', 
+            border: 'none', 
+            color: currentIndex > 0 ? '#666' : '#ccc', // 첫 카드일 땐 흐리게
+            cursor: currentIndex > 0 ? 'pointer' : 'default',
+            fontSize: '0.9rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '5px'
+          }}
+          disabled={currentIndex === 0}
+        >
+          ↩️ 잘못 눌렀어요 (뒤로가기)
+        </button>
+      </div>
 
       <div className="buttons">
         <button className="btn btn-x" onClick={(e) => { e.stopPropagation(); handleAnswer(false); }}>X</button>
