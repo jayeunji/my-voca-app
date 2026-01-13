@@ -234,3 +234,17 @@
   border-radius: 20px; /* 둥근 모서리 */
   letter-spacing: 1px;
 }
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+.review-btn {
+  transition: transform 0.2s, background-color 0.3s;
+}
+
+.review-btn:active {
+  transform: scale(0.95);
+}
