@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/jayeunji/my-voca-app.git/static/css/main.afb8da1d.css",
+    "main.js": "/jayeunji/my-voca-app.git/static/js/main.544814df.js",
+    "static/js/453.fd2f0c4a.chunk.js": "/jayeunji/my-voca-app.git/static/js/453.fd2f0c4a.chunk.js",
+    "index.html": "/jayeunji/my-voca-app.git/index.html",
+    "main.afb8da1d.css.map": "/jayeunji/my-voca-app.git/static/css/main.afb8da1d.css.map",
+    "main.544814df.js.map": "/jayeunji/my-voca-app.git/static/js/main.544814df.js.map",
+    "453.fd2f0c4a.chunk.js.map": "/jayeunji/my-voca-app.git/static/js/453.fd2f0c4a.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.afb8da1d.css",
+    "static/js/main.544814df.js"
+  ]
+}
