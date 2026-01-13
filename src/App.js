@@ -66,7 +66,6 @@ function App() {
 
           // 오늘 이미 학습한 단어 처리 (중복 레벨업 방지)
           if (lastReviewed === today) {
-            // 맞췄는데(O), 오늘 이미 한 번 건드린 단어라면? -> 상태 업데이트 건너뜀
             if (isCorrect) break;
             // 틀렸으면(X)? -> 아까 맞췄든 말든 가차 없이 레벨 0으로 초기화
           }
@@ -158,6 +157,31 @@ function App() {
     startSession(`오늘의 복습 (${reviewList.length}단어)`, reviewList);
   };
 
+  // --- [NEW] 미암기 단어 학습 (챕터별 최고 레벨 기준) ---
+  const startWeakStudy = (e, name) => {
+    e.stopPropagation();
+    
+    const chapterWords = chapters[name];
+    if (!chapterWords || chapterWords.length === 0) return;
+
+    // 1. 이 챕터의 최고 레벨 구하기
+    const maxLevel = Math.max(...chapterWords.map(w => w.level || 0), 0);
+    
+    // 2. 필터 기준 설정
+    // - 최고 레벨이 0(모두 새 단어)이면 기준을 1로 잡아서 다 나오게 함
+    // - 그 외엔 최고 레벨보다 낮은 단어(뒤처진 단어)만 필터링
+    const threshold = maxLevel === 0 ? 1 : maxLevel;
+
+    const weakWords = chapterWords.filter(w => (w.level || 0) < threshold);
+    
+    if (weakWords.length === 0) {
+      alert(`🎉 대단해요! 모든 단어가 현재 최고 레벨(Lv.${maxLevel})에 도달했습니다.`);
+      return;
+    }
+    
+    startSession(`${name} (약점 보완)`, weakWords);
+  };
+
   const startChapterStudy = (name) => {
     startSession(name, chapters[name]);
   };
@@ -206,7 +230,6 @@ function App() {
         });
       });
       if (newWords.length > 0) {
-        // 숫자만 입력받기
         const numInput = prompt("챕터 번호를 입력하세요 (예: 1):", Object.keys(chapters).length + 1);
         
         if (numInput && numInput.trim()) {
@@ -303,13 +326,44 @@ function App() {
           {sortedChapterNames.length === 0 ? (
             <p style={{color: '#999', textAlign:'center'}}>저장된 챕터가 없습니다.<br/>위 버튼을 눌러 파일을 추가해주세요.</p>
           ) : (
-            sortedChapterNames.map(name => (
-              <div key={name} className="chapter-item" onClick={() => startChapterStudy(name)}>
-                <span className="chapter-name">{name}</span>
-                <span className="chapter-count">({chapters[name].length})</span>
-                <button className="delete-btn" onClick={(e) => deleteChapter(e, name)}>🗑️</button>
-              </div>
-            ))
+            sortedChapterNames.map(name => {
+              // [UI Logic] 버튼에 표시할 숫자 계산 (함수 내부 로직과 동일하게)
+              const chapterWords = chapters[name];
+              const maxLevel = Math.max(...chapterWords.map(w => w.level || 0), 0);
+              const threshold = maxLevel === 0 ? 1 : maxLevel;
+              const weakCount = chapterWords.filter(w => (w.level || 0) < threshold).length;
+              
+              return (
+                <div key={name} className="chapter-item" onClick={() => startChapterStudy(name)}>
+                  <span className="chapter-name">{name}</span>
+                  <span className="chapter-count">({chapters[name].length})</span>
+                  
+                  <div style={{marginLeft: 'auto', display: 'flex', gap: '8px'}}>
+                    {/* [NEW] 미암기 학습 버튼 */}
+                    <button 
+                      onClick={(e) => startWeakStudy(e, name)}
+                      style={{
+                        padding: '6px 10px',
+                        borderRadius: '6px',
+                        border: 'none',
+                        backgroundColor: '#ff9800', 
+                        color: 'white',
+                        fontSize: '0.8rem',
+                        cursor: 'pointer',
+                        fontWeight: 'bold',
+                        opacity: weakCount === 0 ? 0.5 : 1 // 할 게 없으면 흐리게 표시
+                      }}
+                      title={`현재 최고 레벨(Lv.${maxLevel}) 미만인 단어만 학습`}
+                      disabled={weakCount === 0}
+                    >
+                      미암기({weakCount})
+                    </button>
+
+                    <button className="delete-btn" onClick={(e) => deleteChapter(e, name)}>🗑️</button>
+                  </div>
+                </div>
+              );
+            })
           )}
         </div>
       </div>
@@ -345,10 +399,8 @@ function App() {
     );
   }
 
-  // --- 학습 화면 렌더링 (실시간 데이터 조회) ---
+  // --- 학습 화면 렌더링 ---
   const currentStudyItem = studyList[currentIndex];
-  
-  // ★ 스냅샷 대신 DB의 최신 정보를 조회해서 보여줌 (Level 0 즉시 반영용)
   let currentWord = currentStudyItem;
   if (currentStudyItem) {
     for (const name in chapters) {
@@ -379,7 +431,6 @@ function App() {
         <div className={`card ${isFlipped ? 'flipped' : ''}`}>
           <div className="card-front">
             {currentWord.en}
-            {/* 현재 레벨 표시 */}
             <div style={{position:'absolute', bottom:'10px', fontSize:'0.8rem', color:'#ccc'}}>
               Lv.{currentWord.level || 0}
             </div>
@@ -388,7 +439,6 @@ function App() {
         </div>
       </div>
       
-      {/* 뒤로가기 버튼 */}
       <div style={{width: '100%', display: 'flex', justifyContent: 'center', marginBottom: '10px'}}>
         <button 
           onClick={handleUndo} 
