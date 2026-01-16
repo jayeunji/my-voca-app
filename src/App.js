@@ -67,20 +67,17 @@ function App() {
           // 오늘 이미 학습한 단어 처리 (중복 레벨업 방지)
           if (lastReviewed === today) {
             if (isCorrect) break;
-            // 틀렸으면(X)? -> 아까 맞췄든 말든 가차 없이 레벨 0으로 초기화
           }
 
           let nextLevel = 0;
           let nextDate = 0;
 
           if (isCorrect) {
-            // 정답 & 오늘 첫 시도: 레벨 업
             nextLevel = currentLevel + 1;
             const intervals = [1, 3, 7, 14, 30, 60];
             const daysToAdd = intervals[currentLevel] || 60; 
             nextDate = getNextDate(daysToAdd);
           } else {
-            // 오답: 레벨 초기화 & 내일 다시
             nextLevel = 0;
             nextDate = getNextDate(1);
           }
@@ -105,7 +102,6 @@ function App() {
       for (const name in newChapters) {
         const idx = newChapters[name].findIndex(w => w.id === originalWord.id);
         if (idx !== -1) {
-          // 학습 전 상태(originalWord)로 데이터를 덮어씌움
           newChapters[name][idx] = { ...originalWord };
           break;
         }
@@ -120,15 +116,11 @@ function App() {
     if (currentIndex === 0) return; 
 
     const prevIndex = currentIndex - 1;
-    const prevWord = studyList[prevIndex]; // 학습 전 상태가 담긴 스냅샷
+    const prevWord = studyList[prevIndex];
 
-    // 1. DB 상태 복구 (레벨, 날짜 등)
     restoreWord(prevWord);
-
-    // 2. 이번 세션 오답 노트에서 제거 (만약 아까 틀렸다고 했었다면)
     setSessionWrongWords(prev => prev.filter(w => w.id !== prevWord.id));
 
-    // 3. 인덱스 되돌리기 & 카드 앞면으로
     setCurrentIndex(prevIndex);
     setIsFlipped(false);
     setIsFinished(false); 
@@ -164,14 +156,8 @@ function App() {
     const chapterWords = chapters[name];
     if (!chapterWords || chapterWords.length === 0) return;
 
-    // 1. 이 챕터의 최고 레벨 구하기
     const maxLevel = Math.max(...chapterWords.map(w => w.level || 0), 0);
-    
-    // 2. 필터 기준 설정
-    // - 최고 레벨이 0(모두 새 단어)이면 기준을 1로 잡아서 다 나오게 함
-    // - 그 외엔 최고 레벨보다 낮은 단어(뒤처진 단어)만 필터링
     const threshold = maxLevel === 0 ? 1 : maxLevel;
-
     const weakWords = chapterWords.filter(w => (w.level || 0) < threshold);
     
     if (weakWords.length === 0) {
@@ -191,7 +177,7 @@ function App() {
     setCurrentChapterName(title);
     setStudyList(shuffleArray(list));
     setCurrentIndex(0);
-    setSessionWrongWords([]); // 새 세션 시작 시 오답 초기화
+    setSessionWrongWords([]); 
     setIsFlipped(false);
     setIsFinished(false);
     setView('study');
@@ -210,7 +196,7 @@ function App() {
     setIsFinished(false);
   };
 
-  // --- 기능: 파일 업로드 (숫자만 입력) ---
+  // --- 기능: 파일 업로드 (발음 기호 파싱 포함) ---
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -221,14 +207,27 @@ function App() {
       lines.forEach((line, index) => {
         if (!line.trim() || !line.includes('|')) return;
         const parts = line.split('|');
+        
+        let rawEnglish = parts[0].trim();
+        let englishWord = rawEnglish;
+        let pronunciation = '';
+
+        const match = rawEnglish.match(/^(.+?)(\[.*\])$/);
+        if (match) {
+          englishWord = match[1].trim(); 
+          pronunciation = match[2].trim(); 
+        }
+
         newWords.push({
           id: Date.now() + index,
-          en: parts[0].trim(),
+          en: englishWord,
+          pronunciation: pronunciation,
           ko: parts.slice(1).join('|').trim(),
           level: 0,
           nextReviewDate: 0 
         });
       });
+
       if (newWords.length > 0) {
         const numInput = prompt("챕터 번호를 입력하세요 (예: 1):", Object.keys(chapters).length + 1);
         
@@ -257,7 +256,6 @@ function App() {
 
   const handleAnswer = (isKnown) => {
     const currentWord = studyList[currentIndex];
-    // 오답 노트 추가 (중복 방지)
     if (!isKnown) {
       setSessionWrongWords(prev => {
         if (prev.find(w => w.id === currentWord.id)) {
@@ -266,7 +264,6 @@ function App() {
         return [...prev, currentWord];
       });
     }
-    // DB 업데이트
     updateWordStats(currentWord.id, isKnown);
 
     if (currentIndex + 1 < studyList.length) {
@@ -281,7 +278,6 @@ function App() {
   if (view === 'home') {
     const todayCount = getTodayReviewWords().length;
 
-    // 챕터 목록 정렬 (숫자 기준 오름차순)
     const sortedChapterNames = Object.keys(chapters).sort((a, b) => {
       const numA = parseInt(a.replace(/[^0-9]/g, ''), 10) || 0;
       const numB = parseInt(b.replace(/[^0-9]/g, ''), 10) || 0;
@@ -292,31 +288,21 @@ function App() {
       <div className="container">
         <h1 style={{marginBottom: '20px', color: '#333'}}>내 단어장 📚</h1>
         
-        <div style={{width: '100%', maxWidth: '400px', marginBottom: '20px'}}>
+        <div className="review-btn-wrapper">
           <button 
             onClick={startTodayReview}
-            className="review-btn"
+            className={`review-btn ${todayCount > 0 ? 'pulse-animation' : ''}`}
             style={{
-              width: '100%', 
-              padding: '15px', 
-              borderRadius: '12px',
-              border: 'none',
               backgroundColor: todayCount > 0 ? '#ff6b6b' : '#4dabf7',
-              color: 'white',
-              fontSize: '1.1rem',
-              fontWeight: 'bold',
-              cursor: 'pointer',
-              boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-              animation: todayCount > 0 ? 'pulse 2s infinite' : 'none'
             }}
           >
             🔥 오늘의 복습 ({todayCount}개)
           </button>
-          {todayCount === 0 && <p style={{textAlign:'center', fontSize:'0.8rem', color:'#888', marginTop:'5px'}}>완벽해요! 오늘 할 복습을 끝냈습니다.</p>}
+          {todayCount === 0 && <p className="review-msg">완벽해요! 오늘 할 복습을 끝냈습니다.</p>}
         </div>
 
         <div className="file-controls">
-          <label className="file-btn" style={{width: '90%', maxWidth: '350px', justifyContent: 'center', padding: '15px', margin: '0 auto'}}>
+          <label className="file-btn">
             <span>➕</span> 새 챕터 추가하기 (txt 파일)
             <input type="file" accept=".txt" onChange={handleFileUpload} className="hidden-input" />
           </label>
@@ -327,7 +313,6 @@ function App() {
             <p style={{color: '#999', textAlign:'center'}}>저장된 챕터가 없습니다.<br/>위 버튼을 눌러 파일을 추가해주세요.</p>
           ) : (
             sortedChapterNames.map(name => {
-              // [UI Logic] 버튼에 표시할 숫자 계산 (함수 내부 로직과 동일하게)
               const chapterWords = chapters[name];
               const maxLevel = Math.max(...chapterWords.map(w => w.level || 0), 0);
               const threshold = maxLevel === 0 ? 1 : maxLevel;
@@ -338,21 +323,10 @@ function App() {
                   <span className="chapter-name">{name}</span>
                   <span className="chapter-count">({chapters[name].length})</span>
                   
-                  <div style={{marginLeft: 'auto', display: 'flex', gap: '8px'}}>
-                    {/* [NEW] 미암기 학습 버튼 */}
+                  <div className="chapter-actions">
                     <button 
                       onClick={(e) => startWeakStudy(e, name)}
-                      style={{
-                        padding: '6px 10px',
-                        borderRadius: '6px',
-                        border: 'none',
-                        backgroundColor: '#ff9800', 
-                        color: 'white',
-                        fontSize: '0.8rem',
-                        cursor: 'pointer',
-                        fontWeight: 'bold',
-                        opacity: weakCount === 0 ? 0.5 : 1 // 할 게 없으면 흐리게 표시
-                      }}
+                      className="weak-study-btn"
                       title={`현재 최고 레벨(Lv.${maxLevel}) 미만인 단어만 학습`}
                       disabled={weakCount === 0}
                     >
@@ -378,20 +352,20 @@ function App() {
           
           {sessionWrongWords.length > 0 ? (
             <>
-              <p style={{fontSize: '1.1rem', margin: '20px 0'}}>
-                앗, <span style={{color:'red', fontWeight:'bold'}}>{sessionWrongWords.length}개</span>를 틀렸네요.
+              <p className="result-text">
+                앗, <span className="result-count">{sessionWrongWords.length}개</span>를 틀렸네요.
               </p>
               <button className="action-btn" style={{backgroundColor: '#ff6b6b'}} onClick={retryWrongWords}>
                 💪 틀린 단어 다시 학습하기
               </button>
             </>
           ) : (
-            <p style={{fontSize: '1.1rem', margin: '20px 0', color: '#4caf50', fontWeight: 'bold'}}>
+            <p className="result-perfect">
               완벽합니다! 모든 단어를 맞췄어요. 💯
             </p>
           )}
 
-          <div style={{marginTop: '20px', borderTop: '1px solid #eee', paddingTop: '20px'}}>
+          <div className="result-actions">
              <button className="action-btn" onClick={() => setView('home')}>목록으로 나가기</button>
           </div>
         </div>
@@ -419,7 +393,7 @@ function App() {
       <div className="study-header">
         <div className="header-top-row">
           <button onClick={() => setView('home')} className="home-icon-btn">🏠</button>
-          <span className="chapter-title" style={{fontSize: '1rem'}}>{currentChapterName}</span>
+          <span className="chapter-title">{currentChapterName}</span>
           <div style={{width: '30px'}}></div> 
         </div>
         <div className="header-progress">
@@ -430,8 +404,18 @@ function App() {
       <div className="card-area" onClick={handleCardClick}>
         <div className={`card ${isFlipped ? 'flipped' : ''}`}>
           <div className="card-front">
-            {currentWord.en}
-            <div style={{position:'absolute', bottom:'10px', fontSize:'0.8rem', color:'#ccc'}}>
+            {/* 단어 */}
+            <div className="card-word">{currentWord.en}</div>
+            
+            {/* 발음 표기 (있을 경우에만) */}
+            {currentWord.pronunciation && (
+              <div className="card-pronunciation">
+                {currentWord.pronunciation}
+              </div>
+            )}
+
+            {/* 현재 레벨 */}
+            <div className="card-level">
               Lv.{currentWord.level || 0}
             </div>
           </div>
@@ -439,19 +423,10 @@ function App() {
         </div>
       </div>
       
-      <div style={{width: '100%', display: 'flex', justifyContent: 'center', marginBottom: '10px'}}>
+      <div className="undo-wrapper">
         <button 
           onClick={handleUndo} 
-          style={{
-            background: 'none', 
-            border: 'none', 
-            color: currentIndex > 0 ? '#666' : '#ccc', 
-            cursor: currentIndex > 0 ? 'pointer' : 'default',
-            fontSize: '0.9rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '5px'
-          }}
+          className="undo-btn"
           disabled={currentIndex === 0}
         >
           ↩️ 잘못 눌렀어요 (뒤로가기)

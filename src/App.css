@@ -1,4 +1,6 @@
 /* App.css */
+
+/* --- [기본 레이아웃] --- */
 .container {
   display: flex;
   flex-direction: column;
@@ -9,7 +11,7 @@
   font-family: 'Arial', sans-serif;
 }
 
-/* --- 상단 파일 관리 버튼 영역 (새로 추가됨) --- */
+/* --- [홈 화면] 파일 관리 영역 --- */
 .file-controls {
   display: flex;
   justify-content: center;
@@ -18,9 +20,14 @@
   width: 100%;
 }
 
-/* 버튼과 라벨 공통 스타일 */
 .file-btn {
-  padding: 10px 20px;
+  /* 기존 인라인 스타일 통합 */
+  width: 90%;
+  max-width: 350px;
+  justify-content: center;
+  margin: 0 auto;
+  
+  padding: 15px;
   background-color: #333;
   color: white;
   border: none;
@@ -31,8 +38,6 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  text-decoration: none;
-  margin: 0;
   transition: background-color 0.2s;
 }
 
@@ -40,107 +45,60 @@
   background-color: #555;
 }
 
-/* 숨겨진 파일 입력창 */
 .hidden-input {
   display: none;
 }
-/* ------------------------------------------ */
 
-.card-area {
-  width: 300px;
-  height: 200px;
-  perspective: 1000px;
-  cursor: pointer;
-  margin-bottom: 30px;
-}
-
-.card {
+/* --- [홈 화면] 오늘의 복습 버튼 --- */
+.review-btn-wrapper {
   width: 100%;
-  height: 100%;
-  position: relative;
-  transition: transform 0.6s;
-  transform-style: preserve-3d;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-  border-radius: 15px;
+  max-width: 400px;
+  margin-bottom: 20px;
 }
 
-.card.flipped {
-  transform: rotateY(180deg);
-}
-
-.card-front, .card-back {
-  position: absolute;
+.review-btn {
   width: 100%;
-  height: 100%;
-  backface-visibility: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 24px;
-  font-weight: bold;
-  border-radius: 15px;
-  background-color: white;
-  color: #333;
-}
-
-.card-back {
-  background-color: #4a90e2;
-  color: white;
-  transform: rotateY(180deg);
-  white-space: pre-wrap; /* 줄바꿈 허용 (인라인에서 이동됨) */
-  padding: 10px;         /* 텍스트가 너무 꽉 차지 않게 여백 추가 */
-  box-sizing: border-box;
-}
-
-.buttons {
-  display: flex;
-  gap: 20px;
-}
-
-.btn {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
+  padding: 15px;
+  border-radius: 12px;
   border: none;
-  font-size: 24px;
+  font-size: 1.1rem;
   font-weight: bold;
   cursor: pointer;
-  transition: transform 0.2s;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  color: white;
+  transition: transform 0.2s, background-color 0.3s;
 }
 
-.btn:active {
+.review-btn:active {
   transform: scale(0.95);
 }
 
-.btn-o { background-color: #4caf50; color: white; }
-.btn-x { background-color: #ff5252; color: white; }
+/* 애니메이션용 클래스 */
+.pulse-animation {
+  animation: pulse 2s infinite;
+}
 
-.result-area {
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+.review-msg {
   text-align: center;
-  background: white;
-  padding: 40px;
-  border-radius: 15px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  font-size: 0.8rem;
+  color: #888;
+  margin-top: 5px;
 }
 
-.action-btn {
-  margin: 10px;
-  padding: 10px 20px;
-  font-size: 16px;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  background-color: #333;
-  color: white;
-}
-
+/* --- [홈 화면] 챕터 리스트 --- */
 .chapter-list {
   width: 100%;
-  max-width: 400px; /* 모바일에서 너무 넓지 않게 */
+  max-width: 400px;
   display: flex;
   flex-direction: column;
   gap: 15px;
-  overflow-y: auto; /* 목록 많으면 스크롤 */
+  overflow-y: auto;
   padding-bottom: 50px;
 }
 
@@ -171,7 +129,33 @@
   font-size: 0.9rem;
   color: #888;
   margin-left: 10px;
-  margin-right: auto; /* 이름 바로 옆에 붙이고 나머지는 빈 공간 */
+  margin-right: auto; 
+}
+
+/* 챕터 아이템 우측 버튼 그룹 */
+.chapter-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* [NEW] 미암기 학습 버튼 스타일 */
+.weak-study-btn {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: none;
+  background-color: #ff9800; /* 주황색 */
+  color: white;
+  font-size: 0.8rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.weak-study-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
 .delete-btn {
@@ -187,22 +171,22 @@
   opacity: 1;
 }
 
-/* --- 학습 화면 헤더 스타일 (새로 추가) --- */
+/* --- [학습 화면] 헤더 --- */
 .study-header {
   width: 100%;
-  max-width: 400px; /* 모바일 폭에 맞춤 */
+  max-width: 400px;
   padding: 10px 20px;
   margin-bottom: 10px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px; /* 제목 줄과 숫자 줄 사이 간격 */
+  gap: 10px;
 }
 
 .header-top-row {
   width: 100%;
   display: flex;
-  justify-content: space-between; /* 양끝 정렬 */
+  justify-content: space-between;
   align-items: center;
   position: relative;
 }
@@ -213,7 +197,7 @@
   font-size: 1.5rem;
   cursor: pointer;
   padding: 0;
-  width: 30px; /* 공간 확보 */
+  width: 30px;
   text-align: left;
 }
 
@@ -222,29 +206,173 @@
   font-size: 1.2rem;
   color: #333;
   text-align: center;
-  flex: 1; /* 남은 공간 모두 차지하여 중앙 정렬 유지 */
+  flex: 1; 
 }
 
 .header-progress {
   font-size: 1rem;
   font-weight: bold;
   color: #666;
-  background-color: #e9ecef; /* 회색 알약 배경 */
+  background-color: #e9ecef;
   padding: 5px 15px;
-  border-radius: 20px; /* 둥근 모서리 */
+  border-radius: 20px;
   letter-spacing: 1px;
 }
 
-@keyframes pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.02); }
-  100% { transform: scale(1); }
+/* --- [학습 화면] 카드 영역 --- */
+.card-area {
+  width: 300px;
+  height: 200px;
+  perspective: 1000px;
+  cursor: pointer;
+  margin-bottom: 30px;
 }
 
-.review-btn {
-  transition: transform 0.2s, background-color 0.3s;
+.card {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  border-radius: 15px;
 }
 
-.review-btn:active {
+.card.flipped {
+  transform: rotateY(180deg);
+}
+
+.card-front, .card-back {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  display: flex;
+  flex-direction: column; /* 세로 정렬 추가 (발음 때문) */
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  font-weight: bold;
+  border-radius: 15px;
+  background-color: white;
+  color: #333;
+}
+
+.card-back {
+  background-color: #4a90e2;
+  color: white;
+  transform: rotateY(180deg);
+  white-space: pre-wrap;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+/* [NEW] 카드 내부 텍스트 스타일 */
+.card-word {
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+.card-pronunciation {
+  font-size: 1.2rem;
+  color: #888;
+  margin-top: 10px;
+  font-family: monospace; /* 발음기호용 폰트 */
+}
+
+.card-level {
+  position: absolute;
+  bottom: 15px;
+  font-size: 0.8rem;
+  color: #ccc;
+}
+
+/* --- [학습 화면] 컨트롤 버튼 --- */
+.undo-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.undo-btn {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.undo-btn:disabled {
+  color: #ccc;
+  cursor: default;
+}
+
+.buttons {
+  display: flex;
+  gap: 20px;
+}
+
+.btn {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: none;
+  font-size: 24px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.btn:active {
   transform: scale(0.95);
+}
+
+.btn-o { background-color: #4caf50; color: white; }
+.btn-x { background-color: #ff5252; color: white; }
+
+/* --- [결과 화면] --- */
+.result-area {
+  text-align: center;
+  background: white;
+  padding: 40px;
+  border-radius: 15px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.result-text {
+  font-size: 1.1rem;
+  margin: 20px 0;
+}
+
+.result-count {
+  color: red;
+  font-weight: bold;
+}
+
+.result-perfect {
+  font-size: 1.1rem;
+  margin: 20px 0;
+  color: #4caf50;
+  font-weight: bold;
+}
+
+.result-actions {
+  margin-top: 20px;
+  border-top: 1px solid #eee;
+  padding-top: 20px;
+}
+
+.action-btn {
+  margin: 10px;
+  padding: 10px 20px;
+  font-size: 16px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  background-color: #333;
+  color: white;
 }
