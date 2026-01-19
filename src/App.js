@@ -53,19 +53,18 @@ function App() {
   const [isMeaningsHidden, setIsMeaningsHidden] = useState(false);
   const [revealedWordIds, setRevealedWordIds] = useState([]);
 
-  // --- 검색 및 자동완성 관련 State ---
+  // 검색 및 자동완성 관련 State
   const [searchKeyword, setSearchKeyword] = useState('');
   const [suggestions, setSuggestions] = useState([]); 
   const [searchResult, setSearchResult] = useState(null); 
   const [userMeaning, setUserMeaning] = useState('');
   const [newChapterCart, setNewChapterCart] = useState([]); 
-  // [삭제] isSearching state 제거 (사용하지 않음)
 
   useEffect(() => {
     localStorage.setItem('myVocaChapters', JSON.stringify(chapters));
   }, [chapters]);
 
-  // --- 실시간 자동완성 ---
+  // 실시간 자동완성
   useEffect(() => {
     const delayDebounce = setTimeout(() => {
       if (searchKeyword.trim().length > 0) {
@@ -87,14 +86,13 @@ function App() {
         setSuggestions(data); 
       }
     } catch (e) {
-      console.log("자동완성 에러");
+      console.error("Auto-complete error", e);
     }
   };
 
   const selectWord = async (word) => {
     setSearchKeyword(word);
     setSuggestions([]); 
-    // [삭제] setIsSearching(true);
     
     try {
       const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`);
@@ -117,8 +115,7 @@ function App() {
       }
     } catch (e) {
       alert("오류가 발생했습니다.");
-    } 
-    // [삭제] finally { setIsSearching(false); }
+    }
   };
 
   const cancelSelection = () => {
@@ -133,16 +130,18 @@ function App() {
     setUserMeaning('');
   };
 
-  // --- 기존 로직들 ---
+  // 기존 로직들
   const toggleMeaningsMode = () => {
     if (!isMeaningsHidden) setRevealedWordIds([]);
     setIsMeaningsHidden(!isMeaningsHidden);
   };
+  
   const revealWord = (id) => {
     if (isMeaningsHidden && !revealedWordIds.includes(id)) {
       setRevealedWordIds([...revealedWordIds, id]);
     }
   };
+
   const toggleBookmark = (wordId) => {
     setChapters(prev => {
       const newChapters = { ...prev };
@@ -162,6 +161,7 @@ function App() {
       return newChapters;
     });
   };
+
   const updateWordStats = (wordId, isCorrect) => {
     setChapters(prevChapters => {
       const newChapters = { ...prevChapters };
@@ -198,6 +198,7 @@ function App() {
       return newChapters;
     });
   };
+
   const handleUndo = (e) => {
     e.stopPropagation();
     if (currentIndex === 0) return;
@@ -210,6 +211,7 @@ function App() {
       return prev.filter(w => w.id !== prevWord.id);
     });
   };
+
   const startSession = (title, list) => {
     setCurrentChapterName(title);
     setStudyList(shuffleArray(list));
@@ -219,6 +221,7 @@ function App() {
     setIsFinished(false);
     setView('study');
   };
+
   const startBookmarkStudy = () => {
     const bookmarkedWords = Object.values(chapters).flat().filter(w => w.isBookmarked);
     if (bookmarkedWords.length === 0) {
@@ -227,6 +230,7 @@ function App() {
     }
     startSession("내 단어장", bookmarkedWords);
   };
+
   const startChapterBookmarkStudy = () => {
     const chapterWords = chapters[currentChapterName] || [];
     const bookmarkedWords = chapterWords.filter(w => w.isBookmarked);
@@ -236,6 +240,7 @@ function App() {
     }
     startSession(`${currentChapterName} (북마크)`, bookmarkedWords);
   };
+
   const startWeakStudy = (e, name) => {
     e.stopPropagation();
     const chapterWords = chapters[name];
@@ -249,6 +254,7 @@ function App() {
     }
     startSession(`${name} (약점 보완)`, weakWords);
   };
+
   const openChapterDetail = (e, name) => {
     e.stopPropagation();
     setCurrentChapterName(name);
@@ -256,6 +262,7 @@ function App() {
     setRevealedWordIds([]);
     setView('chapter_detail');
   };
+
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -295,6 +302,7 @@ function App() {
     reader.readAsText(file);
     e.target.value = '';
   };
+
   const deleteChapter = (e, name) => {
     e.stopPropagation();
     if (window.confirm("삭제하시겠습니까?")) {
@@ -305,7 +313,9 @@ function App() {
       });
     }
   };
+
   const handleCardClick = () => setIsFlipped(!isFlipped);
+
   const handleAnswer = (isKnown) => {
     const currentWord = studyList[currentIndex];
     if (!isKnown) {
@@ -322,6 +332,7 @@ function App() {
       setIsFinished(true);
     }
   };
+
   const retryWrongWords = () => {
     startSession(`${currentChapterName}`, sessionWrongWords);
   };

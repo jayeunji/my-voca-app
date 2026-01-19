@@ -1,6 +1,6 @@
 /* App.css */
 
-/* --- Fonts (Pretendard) --- */
+/* Fonts (Pretendard) */
 @font-face {
   font-family: 'Pretendard';
   src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/pretendard@1.0/Pretendard-Thin.woff2') format('woff2');
@@ -127,7 +127,6 @@
   flex-direction: column;
   gap: 15px;
   margin: 0 auto;
-  /* Center list on large screens */
 }
 
 .chapter-row {
@@ -252,8 +251,6 @@
 .spacer {
   width: 30px;
 }
-
-/* Header balance */
 
 .word-list-container {
   width: 100%;
@@ -635,13 +632,11 @@
   transform: scale(0.98);
 }
 
-/* --- [NEW] 듣기(TTS) 버튼 스타일 --- */
-
-/* 1. 학습 카드 내 스피커 버튼 (왼쪽 상단) */
+/* TTS Buttons */
 .card-speak-btn {
   position: absolute;
   top: 15px;
-  left: 15px; /* 북마크는 right, 스피커는 left */
+  left: 15px;
   background: none;
   border: none;
   font-size: 1.8rem;
@@ -659,7 +654,6 @@
   transform: scale(0.9);
 }
 
-/* 2. 리스트 내 스피커 버튼 (단어 옆) */
 .list-speak-btn {
   background: none;
   border: none;
@@ -677,8 +671,7 @@
   background-color: #e3f2fd;
 }
 
-/* --- [NEW] 검색 화면 스타일 (디자인 개선됨) --- */
-
+/* Search View Styles */
 .search-container {
   width: 100%;
   max-width: 400px;
@@ -690,40 +683,36 @@
   overflow-y: auto;
 }
 
-/* 검색창 감싸는 영역 (상단 여백 추가) */
 .search-input-wrapper {
   position: relative;
   width: 100%;
-  margin-top: 30px; /* 상단 헤더와의 간격을 넓힘 */
+  margin-top: 30px;
   margin-bottom: 20px;
 }
 
-/* 검색창 디자인 (그림자, 둥근 모서리) */
 .search-box {
   display: flex;
   align-items: center;
   background: white;
-  border-radius: 25px; /* 둥근 캡슐 모양 */
+  border-radius: 25px;
   padding: 5px 15px;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08); /* 부드러운 그림자 */
-  border: 1px solid #f0f0f0; /* 아주 연한 테두리 */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+  border: 1px solid #f0f0f0;
   transition: box-shadow 0.2s, border-color 0.2s;
 }
 
-/* 검색창 포커스 시 효과 */
 .search-box:focus-within {
   box-shadow: 0 6px 20px rgba(33, 150, 243, 0.15);
   border-color: #2196f3;
 }
 
-/* 실제 입력 필드 */
 .search-input {
   flex: 1;
   border: none;
   background: transparent;
   font-size: 1.1rem;
   padding: 12px 5px;
-  outline: none; /* 기본 테두리 제거 */
+  outline: none;
   color: #333;
 }
 
@@ -731,7 +720,6 @@
   color: #aaa;
 }
 
-/* 돋보기 아이콘 */
 .search-indicator {
   font-size: 1.2rem;
   color: #ccc;
@@ -741,7 +729,6 @@
   justify-content: center;
 }
 
-/* 검색어 초기화(X) 버튼 */
 .clear-search-btn {
   background: #eee;
   border: none;
@@ -763,11 +750,10 @@
   color: #333;
 }
 
-/* --- 자동완성 리스트 스타일 --- */
 .suggestions-list {
   position: absolute;
-  top: 55px; /* 검색창 바로 아래 위치 조정 */
-  left: 10px; /* 약간 안쪽으로 */
+  top: 55px;
+  left: 10px;
   width: calc(100% - 20px);
   background: white;
   border: 1px solid #f0f0f0;
@@ -799,7 +785,6 @@
   font-weight: 600;
 }
 
-/* --- 검색 결과 카드 --- */
 .search-result-card {
   background: white;
   padding: 20px;
@@ -867,7 +852,6 @@
   background-color: #1976d2;
 }
 
-/* 장바구니 영역 */
 .cart-area h3 {
   font-size: 1.1rem;
   margin-bottom: 15px;
