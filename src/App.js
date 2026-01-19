@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 
-// --- [유틸리티] ---
 const getNextDate = (days) => {
   const date = new Date();
   date.setHours(0, 0, 0, 0);
@@ -25,7 +24,6 @@ const shuffleArray = (array) => {
 };
 
 function App() {
-  // --- State 관리 ---
   const [chapters, setChapters] = useState(() => {
     const saved = localStorage.getItem('myVocaChapters');
     return saved ? JSON.parse(saved) : {};
@@ -45,14 +43,12 @@ function App() {
     localStorage.setItem('myVocaChapters', JSON.stringify(chapters));
   }, [chapters]);
 
-  // --- [기능] 북마크 토글 ---
   const toggleBookmark = (wordId) => {
     setChapters(prev => {
       const newChapters = { ...prev };
       for (const name in newChapters) {
         const words = newChapters[name];
         const wordIndex = words.findIndex(w => w.id === wordId);
-
         if (wordIndex !== -1) {
           const newWords = [...words];
           newWords[wordIndex] = {
@@ -81,9 +77,7 @@ function App() {
           const currentLevel = word.level || 0;
           const lastReviewed = word.lastReviewed || 0;
 
-          if (lastReviewed === today && isCorrect) {
-            break;
-          }
+          if (lastReviewed === today && isCorrect) break;
 
           let nextLevel = 0;
           let nextDate = 0;
@@ -136,16 +130,12 @@ function App() {
     setView('study');
   };
 
-  // --- [NEW] 북마크 전체 학습 기능 ---
   const startBookmarkStudy = () => {
-    // 모든 챕터를 뒤져서 북마크된 단어만 모음
     const bookmarkedWords = Object.values(chapters).flat().filter(w => w.isBookmarked);
-
     if (bookmarkedWords.length === 0) {
-      alert("북마크한 단어가 없습니다! 단어 옆의 별표를 눌러 추가해주세요.");
+      alert("북마크한 단어가 없습니다.");
       return;
     }
-
     startSession("내 단어장", bookmarkedWords);
   };
 
@@ -159,7 +149,7 @@ function App() {
     const weakWords = chapterWords.filter(w => (w.level || 0) < threshold);
 
     if (weakWords.length === 0) {
-      alert(`🎉 대단해요! 모든 단어가 현재 최고 레벨(Lv.${maxLevel})에 도달했습니다.`);
+      alert(`모든 단어가 현재 최고 레벨(Lv.${maxLevel})에 도달했습니다.`);
       return;
     }
     startSession(`${name} (약점 보완)`, weakWords);
@@ -181,7 +171,6 @@ function App() {
       lines.forEach((line, index) => {
         if (!line.trim() || !line.includes('|')) return;
         const parts = line.split('|');
-
         let rawEnglish = parts[0].trim();
         let englishWord = rawEnglish;
         let pronunciation = '';
@@ -204,7 +193,7 @@ function App() {
       });
 
       if (newWords.length > 0) {
-        const numInput = prompt("챕터 번호를 입력하세요 (예: 1):", Object.keys(chapters).length + 1);
+        const numInput = prompt("챕터 번호를 입력하세요:", Object.keys(chapters).length + 1);
         if (numInput && numInput.trim()) {
           const name = `Chapter ${numInput.trim()}`;
           setChapters(prev => ({ ...prev, [name]: newWords }));
@@ -250,9 +239,6 @@ function App() {
     startSession(`${currentChapterName}`, sessionWrongWords);
   };
 
-
-  // --- 렌더링 ---
-
   if (view === 'study') {
     if (isFinished) {
       return (
@@ -262,7 +248,7 @@ function App() {
             {sessionWrongWords.length > 0 ? (
               <>
                 <p className="result-text">앗, <span className="result-count">{sessionWrongWords.length}개</span>를 틀렸네요.</p>
-                <button className="action-btn" style={{ backgroundColor: '#ff6b6b' }} onClick={retryWrongWords}>💪 틀린 단어 다시 학습하기</button>
+                <button className="action-btn wrong-btn" onClick={retryWrongWords}>💪 틀린 단어 다시 학습하기</button>
               </>
             ) : (
               <p className="result-perfect">완벽합니다! 모든 단어를 맞췄어요. 💯</p>
@@ -291,30 +277,31 @@ function App() {
           <div className="header-top-row">
             <button onClick={() => setView('home')} className="home-icon-btn">🏠</button>
             <span className="chapter-title">{currentChapterName}</span>
-            <div style={{ width: '30px' }}></div>
+            <div className="spacer"></div>
           </div>
           <div className="header-progress">{currentIndex + 1} / {studyList.length}</div>
         </div>
 
         <div className="card-area" onClick={handleCardClick}>
+          <button 
+            className={`card-bookmark-btn ${currentWord.isBookmarked ? 'active' : ''}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleBookmark(currentWord.id);
+            }}
+          >
+            {currentWord.isBookmarked ? '★' : '☆'}
+          </button>
+
           <div className={`card ${isFlipped ? 'flipped' : ''}`}>
             <div className="card-front">
-              <button
-                className={`card-bookmark-btn ${currentWord.isBookmarked ? 'active' : ''}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleBookmark(currentWord.id);
-                }}
-              >
-                {currentWord.isBookmarked ? '★' : '☆'}
-              </button>
-
               <div className="card-word">{currentWord.en}</div>
               {currentWord.pronunciation && <div className="card-pronunciation">{currentWord.pronunciation}</div>}
               <div className="card-level">Lv.{currentWord.level || 0}</div>
             </div>
-
-            <div className="card-back">{currentWord.ko}</div>
+            <div className="card-back">
+              {currentWord.ko}
+            </div>
           </div>
         </div>
 
@@ -329,7 +316,6 @@ function App() {
     );
   }
 
-  // 리스트 상세 보기
   if (view === 'chapter_detail') {
     const words = chapters[currentChapterName] || [];
     return (
@@ -337,7 +323,7 @@ function App() {
         <div className="list-header">
           <button onClick={() => setView('home')} className="back-btn">←</button>
           <h2>{currentChapterName}</h2>
-          <div style={{ width: '24px' }}></div>
+          <div className="spacer"></div>
         </div>
         <div className="word-list-container">
           {words.map(word => (
@@ -361,20 +347,16 @@ function App() {
     );
   }
 
-  // 메인 (홈/북마크)
   return (
     <div className="container with-tabbar">
       {activeTab === 'bookmark' ? (
         <>
           <h1 className="main-title">내 단어장 ⭐</h1>
-
-          {/* [NEW] 북마크 학습 버튼 영역 */}
           <div className="bookmark-controls">
             <button className="bookmark-play-btn" onClick={startBookmarkStudy}>
               ▶ 랜덤 학습하기
             </button>
           </div>
-
           <div className="word-list-container">
             {Object.values(chapters).flat().filter(w => w.isBookmarked).length === 0 ? (
               <p className="empty-msg">아직 북마크한 단어가 없어요.</p>
