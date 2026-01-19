@@ -39,24 +39,23 @@ function App() {
   const [isFinished, setIsFinished] = useState(false);
   const [sessionWrongWords, setSessionWrongWords] = useState([]);
 
-  // --- [NEW] 뜻 가리기 관련 State ---
-  const [isMeaningsHidden, setIsMeaningsHidden] = useState(false); // 전체 가리기 여부
-  const [revealedWordIds, setRevealedWordIds] = useState([]); // 가려진 상태에서 개별적으로 클릭해 보여줄 단어 ID들
+  // 뜻 가리기 관련 State
+  const [isMeaningsHidden, setIsMeaningsHidden] = useState(false);
+  const [revealedWordIds, setRevealedWordIds] = useState([]);
 
   useEffect(() => {
     localStorage.setItem('myVocaChapters', JSON.stringify(chapters));
   }, [chapters]);
 
-  // --- [NEW] 뜻 가리기 토글 함수 ---
+  // --- 기능 함수들 ---
+
   const toggleMeaningsMode = () => {
-    // 가리기 모드를 켤 때는 개별 확인 목록 초기화
     if (!isMeaningsHidden) {
       setRevealedWordIds([]);
     }
     setIsMeaningsHidden(!isMeaningsHidden);
   };
 
-  // --- [NEW] 개별 단어 뜻 보기 함수 ---
   const revealWord = (id) => {
     if (isMeaningsHidden && !revealedWordIds.includes(id)) {
       setRevealedWordIds([...revealedWordIds, id]);
@@ -150,6 +149,7 @@ function App() {
     setView('study');
   };
 
+  // 1. 전체 북마크 학습
   const startBookmarkStudy = () => {
     const bookmarkedWords = Object.values(chapters).flat().filter(w => w.isBookmarked);
     if (bookmarkedWords.length === 0) {
@@ -157,6 +157,18 @@ function App() {
       return;
     }
     startSession("내 단어장", bookmarkedWords);
+  };
+
+  // 2. [NEW] 현재 챕터 북마크 학습
+  const startChapterBookmarkStudy = () => {
+    const chapterWords = chapters[currentChapterName] || [];
+    const bookmarkedWords = chapterWords.filter(w => w.isBookmarked);
+
+    if (bookmarkedWords.length === 0) {
+      alert("이 챕터에는 북마크된 단어가 없습니다.\n단어 옆의 별표(☆)를 눌러 북마크해주세요!");
+      return;
+    }
+    startSession(`${currentChapterName} (북마크)`, bookmarkedWords);
   };
 
   const startWeakStudy = (e, name) => {
@@ -178,11 +190,8 @@ function App() {
   const openChapterDetail = (e, name) => {
     e.stopPropagation();
     setCurrentChapterName(name);
-    
-    // 리스트 진입 시 가리기 모드 초기화 (선택 사항, 원치 않으면 삭제 가능)
     setIsMeaningsHidden(false); 
     setRevealedWordIds([]);
-
     setView('chapter_detail');
   };
 
@@ -264,6 +273,8 @@ function App() {
     startSession(`${currentChapterName}`, sessionWrongWords);
   };
 
+  // --- 렌더링 ---
+
   if (view === 'study') {
     if (isFinished) {
       return (
@@ -344,12 +355,14 @@ function App() {
   // --- [챕터 상세 보기 화면] ---
   if (view === 'chapter_detail') {
     const words = chapters[currentChapterName] || [];
+    // 이 챕터의 북마크 개수 계산 (버튼 표시용)
+    const bookmarkedCount = words.filter(w => w.isBookmarked).length;
+
     return (
       <div className="container with-tabbar">
         <div className="list-header">
           <button onClick={() => setView('home')} className="back-btn">←</button>
           <h2>{currentChapterName}</h2>
-          {/* [NEW] 헤더 우측에 뜻 가리기 버튼 배치 */}
           <button 
             className={`toggle-hide-btn ${isMeaningsHidden ? 'active' : ''}`} 
             onClick={toggleMeaningsMode}
@@ -358,9 +371,18 @@ function App() {
           </button>
         </div>
 
+        {/* [NEW] 챕터 전용 북마크 학습 버튼 */}
+        <div style={{ width: '100%', display: 'flex', justifyContent: 'center', margin: '10px 0' }}>
+          <button 
+            className="chapter-bookmark-study-btn" 
+            onClick={startChapterBookmarkStudy}
+          >
+            ⭐ 북마크 단어 암기 ({bookmarkedCount})
+          </button>
+        </div>
+
         <div className="word-list-container">
           {words.map(word => {
-            // [NEW] 가려짐 여부 판단
             const isHidden = isMeaningsHidden && !revealedWordIds.includes(word.id);
             
             return (
@@ -369,7 +391,6 @@ function App() {
                   <span className="word-en">{word.en}</span>
                   {word.pronunciation && <span className="word-pro">{word.pronunciation}</span>}
                   
-                  {/* [NEW] 뜻 부분에 조건부 클래스 적용 및 클릭 이벤트 추가 */}
                   <span 
                     className={`word-ko ${isHidden ? 'hidden' : ''}`}
                     onClick={() => revealWord(word.id)}
@@ -402,7 +423,6 @@ function App() {
             <button className="bookmark-play-btn" onClick={startBookmarkStudy}>
               ▶ 랜덤 학습하기
             </button>
-            {/* [NEW] 북마크 탭에도 뜻 가리기 버튼 추가 */}
             <button 
               className={`toggle-hide-btn ${isMeaningsHidden ? 'active' : ''}`} 
               onClick={toggleMeaningsMode}
@@ -417,7 +437,6 @@ function App() {
               <p className="empty-msg">아직 북마크한 단어가 없어요.</p>
             ) : (
               Object.values(chapters).flat().filter(w => w.isBookmarked).map(word => {
-                // [NEW] 가려짐 여부 판단
                 const isHidden = isMeaningsHidden && !revealedWordIds.includes(word.id);
                 
                 return (
@@ -426,7 +445,6 @@ function App() {
                       <span className="word-en">{word.en}</span>
                       {word.pronunciation && <span className="word-pro">{word.pronunciation}</span>}
                       
-                      {/* [NEW] 뜻 부분 가리기 로직 */}
                       <span 
                         className={`word-ko ${isHidden ? 'hidden' : ''}`}
                         onClick={() => revealWord(word.id)}
