@@ -636,17 +636,20 @@ function App() {
       ) : (
         <>
           <h1 className="main-title">단어장 목록 📚</h1>
+          
+          {/* [수정됨] 파일 추가 & 검색 버튼 영역 */}
           <div className="file-controls">
-            <div style={{display:'flex', gap:'10px', width: '90%', maxWidth:'400px'}}>
-              <label className="file-btn" style={{flex:1, justifyContent:'center'}}>
+            <div className="file-buttons-wrapper">
+              <label className="file-btn">
                 <span>📂</span> 파일 추가
                 <input type="file" accept=".txt" onChange={handleFileUpload} className="hidden-input" />
               </label>
-              <button className="file-btn" style={{flex:1, justifyContent:'center'}} onClick={() => setView('search')}>
+              <button className="file-btn" onClick={() => setView('search')}>
                 <span>🔍</span> 단어 검색
               </button>
             </div>
           </div>
+
           <div className="chapter-list">
             {Object.keys(chapters).sort((a, b) => {
               const numA = parseInt(a.replace(/[^0-9]/g, ''), 10) || 0;
