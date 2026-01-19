@@ -23,6 +23,23 @@ const shuffleArray = (array) => {
   return newArray;
 };
 
+// --- [NEW] TTS(음성 합성) 함수 ---
+const speak = (text) => {
+  if (!window.speechSynthesis) {
+    alert("이 브라우저는 음성 합성을 지원하지 않습니다.");
+    return;
+  }
+  // 진행 중인 음성이 있다면 취소 (연타 방지)
+  window.speechSynthesis.cancel();
+
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = 'en-US'; // 영어 발음 설정
+  utterance.rate = 0.9;     // 속도 (1이 기본, 0.9는 약간 또박또박)
+  utterance.pitch = 1;      // 톤
+
+  window.speechSynthesis.speak(utterance);
+};
+
 function App() {
   const [chapters, setChapters] = useState(() => {
     const saved = localStorage.getItem('myVocaChapters');
@@ -46,8 +63,6 @@ function App() {
   useEffect(() => {
     localStorage.setItem('myVocaChapters', JSON.stringify(chapters));
   }, [chapters]);
-
-  // --- 기능 함수들 ---
 
   const toggleMeaningsMode = () => {
     if (!isMeaningsHidden) {
@@ -149,7 +164,6 @@ function App() {
     setView('study');
   };
 
-  // 1. 전체 북마크 학습
   const startBookmarkStudy = () => {
     const bookmarkedWords = Object.values(chapters).flat().filter(w => w.isBookmarked);
     if (bookmarkedWords.length === 0) {
@@ -159,7 +173,6 @@ function App() {
     startSession("내 단어장", bookmarkedWords);
   };
 
-  // 2. [NEW] 현재 챕터 북마크 학습
   const startChapterBookmarkStudy = () => {
     const chapterWords = chapters[currentChapterName] || [];
     const bookmarkedWords = chapterWords.filter(w => w.isBookmarked);
@@ -273,8 +286,6 @@ function App() {
     startSession(`${currentChapterName}`, sessionWrongWords);
   };
 
-  // --- 렌더링 ---
-
   if (view === 'study') {
     if (isFinished) {
       return (
@@ -319,6 +330,7 @@ function App() {
         </div>
 
         <div className="card-area" onClick={handleCardClick}>
+          {/* 북마크 버튼 */}
           <button 
             className={`card-bookmark-btn ${currentWord.isBookmarked ? 'active' : ''}`}
             onClick={(e) => {
@@ -327,6 +339,17 @@ function App() {
             }}
           >
             {currentWord.isBookmarked ? '★' : '☆'}
+          </button>
+
+          {/* [NEW] 스피커(듣기) 버튼 (카드 왼쪽 상단) */}
+          <button 
+            className="card-speak-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              speak(currentWord.en);
+            }}
+          >
+            🔊
           </button>
 
           <div className={`card ${isFlipped ? 'flipped' : ''}`}>
@@ -355,7 +378,6 @@ function App() {
   // --- [챕터 상세 보기 화면] ---
   if (view === 'chapter_detail') {
     const words = chapters[currentChapterName] || [];
-    // 이 챕터의 북마크 개수 계산 (버튼 표시용)
     const bookmarkedCount = words.filter(w => w.isBookmarked).length;
 
     return (
@@ -371,13 +393,12 @@ function App() {
           </button>
         </div>
 
-        {/* [NEW] 챕터 전용 북마크 학습 버튼 */}
         <div style={{ width: '100%', display: 'flex', justifyContent: 'center', margin: '10px 0' }}>
           <button 
             className="chapter-bookmark-study-btn" 
             onClick={startChapterBookmarkStudy}
           >
-            ⭐ 북마크 단어 암기 ({bookmarkedCount})
+            ⭐ 북마크 단어만 외우기 ({bookmarkedCount})
           </button>
         </div>
 
@@ -388,7 +409,17 @@ function App() {
             return (
               <div key={word.id} className="word-list-item">
                 <div className="word-info">
-                  <span className="word-en">{word.en}</span>
+                  {/* [NEW] 단어 옆에 스피커 버튼 추가 */}
+                  <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}>
+                    <span className="word-en">{word.en}</span>
+                    <button 
+                      className="list-speak-btn" 
+                      onClick={(e) => { e.stopPropagation(); speak(word.en); }}
+                    >
+                      🔊
+                    </button>
+                  </div>
+                  
                   {word.pronunciation && <span className="word-pro">{word.pronunciation}</span>}
                   
                   <span 
@@ -442,7 +473,17 @@ function App() {
                 return (
                   <div key={word.id} className="word-list-item">
                     <div className="word-info">
-                      <span className="word-en">{word.en}</span>
+                       {/* [NEW] 북마크 리스트에도 스피커 버튼 */}
+                      <div style={{display: 'flex', alignItems: 'center', gap: '6px'}}>
+                        <span className="word-en">{word.en}</span>
+                        <button 
+                          className="list-speak-btn" 
+                          onClick={(e) => { e.stopPropagation(); speak(word.en); }}
+                        >
+                          🔊
+                        </button>
+                      </div>
+
                       {word.pronunciation && <span className="word-pro">{word.pronunciation}</span>}
                       
                       <span 
